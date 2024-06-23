@@ -1,0 +1,65 @@
+#create links between the nodes
+$ns duplex-link $node1 $node2 5Mb 15ms SFQ
+
+$ ns duplex-link $node2 $node3 10Mb 12ms SFQ
+
+#Set Queue Size of link
+$ns queue-limit $node2 $node3 5
+
+#Setup a TCP connection
+set tcpcon [new Agent/TCP/Sack1]
+
+$ns attach-agent $node1 $tcpcon
+
+set sink [new Agent/TCPSink/Sack1]
+
+$ns attach-agent $node1 $sink
+
+$ ns connect $tcpcon $sink
+
+$tcp set fid_ 1
+
+$ tcp set window_ 8000
+
+$tcp set packetSize_ 500
+
+#Setup a FTP over TCP connection
+set ftpcon [new Application/FTP]
+
+$ftpcon attach-agent $tcpcon
+
+$ ftpcon set type_ FTP
+
+#Setup a UDP connection
+set udpcon [new Agent/UDP]
+
+$netsim attach-agent $node1 $udpcon
+
+set null [new Agent/Null]
+
+$ netsim attach-agent $n5 $null
+
+$netsim connect $udpcon $null
+
+$udpcon set fid_ 2
+
+#Setup a CBR over UDP connection
+set cbrcon [new Application/Traffic/CBR]
+
+$cbrcon attach-agent $udpcon
+
+$ cbrcon set type_ CBR
+
+$cbrcon set packet_size_ 1500
+
+$ cbrcon set rate_ 0.05mb
+
+$cbrcon set random_ false
+
+$ netsim at 0.1 “$cbrcon start”
+
+$netsim at 2.0 “$ftpcon start”
+
+$ netsim at 15.0 “$ftpcon stop”
+
+$netsim at 16.0 “$cbrcon stop”
